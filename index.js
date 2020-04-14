@@ -61,7 +61,7 @@ module.exports.dirToMiddleware = async dir => {
 
   // Use express's static asset middleware b/c it passes on control vs.
   // Next's static middle termininating the request with a 404 if not found.
-  app.use('/static', express.static(path.resolve(dir, 'static')))
+  app.use(express.static(path.resolve(dir, 'public')))
 
   return app
 }

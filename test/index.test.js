@@ -1,9 +1,11 @@
 const { dirToMiddleware } = require('../')
 const path = require('path')
 const express = require('express')
+const request = require('superagent')
 
-test('dirToMiddleware converts directory into express middleware', async () => {
-  let server
+let server
+
+beforeAll(async () => {
   const app = express()
   app.use(await dirToMiddleware(path.resolve(__dirname, 'nextapp')))
   await new Promise((resolve, reject) => {
@@ -11,11 +13,15 @@ test('dirToMiddleware converts directory into express middleware', async () => {
       err ? reject(err) : resolve(server.address().port)
     })
   })
+})
+
+afterAll(() => {
   server.close()
-  // Testing there were no errors thrown.
-  // TODO: Better test using superagent to check response of Next app...
-  // Webpack and Jest seems to be having trouble not timing out or erroring.
-  expect(1 + 1).toEqual(2)
+})
+
+test('dirToMiddleware serves public files', async () => {
+  const res = await request.get('http://localhost:5555/test.txt')
+  expect(res.text).toContain('Hello world')
 })
 
 test('dirToMiddleware whitelists index.js pages as root routes', async () => {
