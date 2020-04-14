@@ -1,0 +1,38 @@
+{
+  "name": "next-to-express",
+  "version": "0.0.1",
+  "description": "Middleware to convert a Next.js app into express middleware",
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.13"
+  },
+  "scripts": {
+    "test": "next build test/nextapp && NODE_ENV=production jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/craigspaeth/next-to-express.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/craigspaeth/next-to-express/issues"
+  },
+  "homepage": "https://github.com/craigspaeth/next-to-express#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "lodash": "^4.17.15",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "jest": "^25.3.0",
+    "next": "^9.3.4",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  },
+  "peerDependencies": {
+    "next": "^9.3.4",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
+  }
+}
