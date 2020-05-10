@@ -1,6 +1,6 @@
 {
   "name": "next-to-express",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Middleware to convert a Next.js app into express middleware",
   "main": "index.js",
   "engines": {
@@ -21,6 +21,7 @@
   "homepage": "https://github.com/craigspaeth/next-to-express#readme",
   "dependencies": {
     "express": "^4.17.1",
+    "glob": "^7.1.6",
     "lodash": "^4.17.15",
     "path": "^0.12.7"
   },

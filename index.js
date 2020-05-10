@@ -10,14 +10,18 @@ const next = require('next')
 const _ = require('lodash')
 const path = require('path')
 const fs = require('fs')
+const glob = require('glob')
 
 const findPageNames = async dir => {
   const files = await new Promise((resolve, reject) =>
-    fs.readdir(path.resolve(dir, 'pages'), (err, res) =>
+    glob(`${dir}/pages/**/*js`, (err, res) =>
       err ? reject(err) : resolve(res)
     )
   )
-  return files.filter(f => !f.match(/^_/)).map(f => f.replace('.js', ''))
+  const paths = files
+    .filter(f => !f.match(/^_/))
+    .map(f => f.replace(dir + '/pages/', '').replace('.js', ''))
+  return paths
 }
 
 /**
@@ -55,8 +59,12 @@ module.exports.dirToMiddleware = async dir => {
 
   // Whitelist routes based on pages
   pages.forEach(page => {
+    const slugMatch = page.match(/\[.*\]/)
+    page = slugMatch
+      ? page.replace(/\[.*\]/, ':' + slugMatch[0].replace(/\[|\]/g, ''))
+      : page
     if (page === 'index') app.get('/', nextHandler)
-    app.get('/' + page, nextHandler)
+    else app.get('/' + page, nextHandler)
   })
 
   // Use express's static asset middleware b/c it passes on control vs.

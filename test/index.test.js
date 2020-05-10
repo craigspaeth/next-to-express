@@ -31,3 +31,13 @@ test('dirToMiddleware whitelists index.js pages as root routes', async () => {
   )[0]
   expect(route).toBeTruthy()
 })
+
+test('dirToMiddleware respects nested pages', async () => {
+  const res = await request.get('http://localhost:5555/nested/foo')
+  expect(res.text).toContain('Hello Nested Page')
+})
+
+test('dirToMiddleware respects nest dynamic pages', async () => {
+  const res = await request.get('http://localhost:5555/post/slawg')
+  expect(res.text).toContain('Hello Dynamic Page')
+})
