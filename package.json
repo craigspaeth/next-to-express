@@ -1,6 +1,6 @@
 {
   "name": "next-to-express",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Middleware to convert a Next.js app into express middleware",
   "main": "index.js",
   "engines": {
