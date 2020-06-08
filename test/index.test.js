@@ -19,25 +19,34 @@ afterAll(() => {
   server.close()
 })
 
-test('dirToMiddleware serves public files', async () => {
-  const res = await request.get('http://localhost:5555/test.txt')
-  expect(res.text).toContain('Hello world')
-})
+describe('dirToMiddleware', () => {
+  test('serves public files', async () => {
+    const res = await request.get('http://localhost:5555/test.txt')
+    expect(res.text).toContain('Hello world')
+  })
 
-test('dirToMiddleware whitelists index.js pages as root routes', async () => {
-  const middleware = await dirToMiddleware(path.resolve(__dirname, 'nextapp'))
-  const route = middleware._router.stack.filter(
-    route => route.regexp.toString() === /^\/?$/i.toString()
-  )[0]
-  expect(route).toBeTruthy()
-})
+  test('whitelists index.js pages as root routes', async () => {
+    const middleware = await dirToMiddleware(path.resolve(__dirname, 'nextapp'))
+    const route = middleware._router.stack.filter(
+      route => route.regexp.toString() === /^\/?$/i.toString()
+    )[0]
+    expect(route).toBeTruthy()
+  })
 
-test('dirToMiddleware respects nested pages', async () => {
-  const res = await request.get('http://localhost:5555/nested/foo')
-  expect(res.text).toContain('Hello Nested Page')
-})
+  test('respects nested pages', async () => {
+    const res = await request.get('http://localhost:5555/nested/foo')
+    expect(res.text).toContain('Hello Nested Page')
+  })
 
-test('dirToMiddleware respects nest dynamic pages', async () => {
-  const res = await request.get('http://localhost:5555/post/slawg')
-  expect(res.text).toContain('Hello Dynamic Page')
+  test('respects nest dynamic pages', async () => {
+    const res = await request.get('http://localhost:5555/post/slawg')
+    expect(res.text).toContain('Hello Dynamic Page')
+  })
+
+  test('whitelists prod assets', async () => {
+    const res = await request.get('http://localhost:5555')
+    const assetPath = 'http://localhost:5555' + res.text.match(/\/_next\/static\/(.*?)js/)[0]
+    const assetRes = await request.get(assetPath)
+    expect(assetRes).not.toEqual(404)
+  })
 })

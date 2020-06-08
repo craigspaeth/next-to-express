@@ -52,7 +52,10 @@ module.exports.dirToMiddleware = async dir => {
   // Re-route asset requests to that prefix
   // TODO: Open issue with Next about assuming `assetPrefix` is only a hostname
   // or another port e.g. localhost:5000 or cdn.foo.com vs. localhost:5000/foo
-  app.get(pathPrefix + '/_next*', (req, res, next) => {
+  app.get('/_next*', (req, res) => {
+    nextHandler(req, res)
+  })
+  app.get(pathPrefix + '/_next*', (req, res) => {
     req.url = req.url.replace(pathPrefix, '')
     nextHandler(req, res)
   })
