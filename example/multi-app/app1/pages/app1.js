@@ -1,0 +1,1 @@
+export default () => <h1>App1</h1>
