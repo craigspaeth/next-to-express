@@ -52,7 +52,12 @@ module.exports.dirToMiddleware = async (dir, {
     const port = await getPort()
     exec(`node ${__dirname}/sub-app-server.js ${dir} ${port}`)
     nextHandler = (req, res) =>
-      proxy.web(req, res, { target: `http://localhost:${port}` })
+      proxy.web(
+        req,
+        res,
+        { target: `http://localhost:${port}` },
+        console.error.bind(console)
+      )
   } else {
     const nextApp = next({ dev, dir })
     const handle = nextApp.getRequestHandler()
