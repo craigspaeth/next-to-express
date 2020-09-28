@@ -30,45 +30,40 @@ const findPageNames = async dir => {
   return paths
 }
 
-const proxyNextDir = async (dir) => {
-  const port = await getPort()
-  const pageNames = await findPageNames(dir)
-  exec(
-    `node ${__dirname}/sub-app-server.js ${dir} ${port}`,
-    console.log.bind(console)
-  )
-  return (req, res, next) => {
-    if (
-      req.path.match(new RegExp(`^${pathPrefix(dir)}/_next`)) ||
-      pageNames.includes(req.path.slice(1))
-    ) {
-      proxy.web(req, res, { target: `http://localhost:${port}` })
-    } else next()
-  }
-}
-
 /**
  *  Converts a Next directory into express middleware
  *
  * @param {string} dir A Next app directory
+ * @param {object} options
+ * @param {boolean} options.isProxied Run next app as an isolated process
  * @returns {object} An express app
  */
-module.exports.dirToExpressApp = async dir => {
+module.exports.dirToMiddleware = async (dir, {
+  isProxied = process.env.NODE_ENV !== 'production'
+} = {}) => {
   const pages = await findPageNames(dir)
-  const dev = process.env.NODE_ENV !== 'production'
   const app = express()
-  
+  const dev = process.env.NODE_ENV !== 'production'
+  let nextHandler
+
   // Setup the next app instance with an asset prefix by directory basename.
   // Create express middleware that prepares the app and handles the request.
-  const nextApp = next({ dev, dir })
-  const handle = nextApp.getRequestHandler()
-  const prepare = _.once(async () => {
-    await nextApp.prepare()
-    nextApp.setAssetPrefix(pathPrefix(dir))
-  })
-  const nextHandler = async (req, res) => {
-    await prepare()
-    handle(req, res)
+  if (isProxied) {
+    const port = await getPort()
+    exec(`node ${__dirname}/sub-app-server.js ${dir} ${port}`)
+    nextHandler = (req, res) =>
+      proxy.web(req, res, { target: `http://localhost:${port}` })
+  } else {
+    const nextApp = next({ dev, dir })
+    const handle = nextApp.getRequestHandler()
+    const prepare = _.once(async () => {
+      await nextApp.prepare()
+      nextApp.setAssetPrefix(pathPrefix(dir))
+    })
+    nextHandler = async (req, res) => {
+      await prepare()
+      handle(req, res)
+    }
   }
 
   // Re-route asset requests to that prefix
@@ -98,7 +93,3 @@ module.exports.dirToExpressApp = async dir => {
 
   return app
 }
-
-module.exports.dirToMiddleware = process.env.NODE_ENV === 'production' 
-  ? module.exports.dirToExpressApp
-  : proxyNextDir
