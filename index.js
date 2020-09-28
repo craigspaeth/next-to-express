@@ -74,8 +74,8 @@ module.exports.dirToMiddleware = async (dir, {
   // Re-route asset requests to that prefix
   // TODO: Open issue with Next about assuming `assetPrefix` is only a hostname
   // or another port e.g. localhost:5000 or cdn.foo.com vs. localhost:5000/foo
-  app.use('/_next/static', express.static(path.resolve(dir, '.next/static')))
-  app.get('/_next*', nextHandler)
+  if (dev) app.get('/_next*', nextHandler)
+  else app.use('/_next/static', express.static(path.resolve(dir, '.next/static')))
   app.get(pathPrefix(dir) + '/_next*', (req, res) => {
     req.url = req.url.replace(pathPrefix(dir), '')
     nextHandler(req, res)
