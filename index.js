@@ -5,12 +5,18 @@
  * using "zones" to allow simpler deployment/maintenance in the early days.
  * https://github.com/zeit/next.js#multi-zones
  */
-const express = require('express')
-const next = require('next')
 const _ = require('lodash')
-const path = require('path')
+const { exec } = require('child_process')
+const express = require('express')
 const fs = require('fs')
+const getPort = require('get-port')
 const glob = require('glob')
+const next = require('next')
+const path = require('path')
+const httpProxy = require('http-proxy');
+const proxy = httpProxy.createProxyServer();
+
+const pathPrefix = dir => '/' + path.parse(dir).base
 
 const findPageNames = async dir => {
   const files = await new Promise((resolve, reject) =>
@@ -24,25 +30,41 @@ const findPageNames = async dir => {
   return paths
 }
 
+const proxyNextDir = async (dir) => {
+  const port = await getPort()
+  const pageNames = await findPageNames(dir)
+  exec(
+    `node ${__dirname}/sub-app-server.js ${dir} ${port}`,
+    console.log.bind(console)
+  )
+  return (req, res, next) => {
+    if (
+      req.path.match(new RegExp(`^${pathPrefix(dir)}/_next`)) ||
+      pageNames.includes(req.path.slice(1))
+    ) {
+      proxy.web(req, res, { target: `http://localhost:${port}` })
+    } else next()
+  }
+}
+
 /**
  *  Converts a Next directory into express middleware
  *
  * @param {string} dir A Next app directory
  * @returns {object} An express app
  */
-module.exports.dirToMiddleware = async dir => {
-  const pathPrefix = '/' + path.parse(dir).base
+module.exports.dirToExpressApp = async dir => {
   const pages = await findPageNames(dir)
-
+  const dev = process.env.NODE_ENV !== 'production'
+  const app = express()
+  
   // Setup the next app instance with an asset prefix by directory basename.
   // Create express middleware that prepares the app and handles the request.
-  const dev = process.env.NODE_ENV !== 'production'
   const nextApp = next({ dev, dir })
-  const app = express()
   const handle = nextApp.getRequestHandler()
   const prepare = _.once(async () => {
     await nextApp.prepare()
-    nextApp.setAssetPrefix(pathPrefix)
+    nextApp.setAssetPrefix(pathPrefix(dir))
   })
   const nextHandler = async (req, res) => {
     await prepare()
@@ -52,11 +74,11 @@ module.exports.dirToMiddleware = async dir => {
   // Re-route asset requests to that prefix
   // TODO: Open issue with Next about assuming `assetPrefix` is only a hostname
   // or another port e.g. localhost:5000 or cdn.foo.com vs. localhost:5000/foo
-  app.get('/_next*', (req, res) => {
+  app.get('/_next*', (req, res, next) => {
     nextHandler(req, res)
   })
-  app.get(pathPrefix + '/_next*', (req, res) => {
-    req.url = req.url.replace(pathPrefix, '')
+  app.get(pathPrefix(dir) + '/_next*', (req, res) => {
+    req.url = req.url.replace(pathPrefix(dir), '')
     nextHandler(req, res)
   })
 
@@ -76,3 +98,7 @@ module.exports.dirToMiddleware = async dir => {
 
   return app
 }
+
+module.exports.dirToMiddleware = process.env.NODE_ENV === 'production' 
+  ? module.exports.dirToExpressApp
+  : proxyNextDir
