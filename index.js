@@ -8,7 +8,6 @@
 const _ = require('lodash')
 const { exec } = require('child_process')
 const express = require('express')
-const fs = require('fs')
 const getPort = require('get-port')
 const glob = require('glob')
 const next = require('next')
@@ -50,7 +49,11 @@ module.exports.dirToMiddleware = async (dir, {
   // Create express middleware that prepares the app and handles the request.
   if (isProxied) {
     const port = await getPort()
-    exec(`node ${__dirname}/sub-app-server.js ${dir} ${port}`)
+    const { stderr, stdout } = exec(
+      `node ${__dirname}/sub-app-server.js ${dir} ${port}`
+    )
+    stderr.pipe(process.stderr)
+    stdout.pipe(process.stdout)
     nextHandler = (req, res) =>
       proxy.web(
         req,
